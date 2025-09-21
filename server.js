@@ -67,6 +67,12 @@ fccTestingRoutes(app);
 const MONGO_URI = process.env.DB || process.env.MONGO_URI || 'mongodb://localhost:27017/anonymous_messageboard';
 const PORT = process.env.PORT || 5000;
 
+// Inicializar con almacenamiento en memoria por defecto (especialmente para pruebas)
+app.locals.db = createMemoryStorage();
+
+// Montar rutas API inmediatamente para que estén disponibles en las pruebas
+apiRoutes(app);
+
 // Función para crear una colección en memoria si no hay MongoDB disponible
 function createMemoryStorage() {
   const threads = [];
@@ -212,19 +218,13 @@ async function startServer() {
     app.locals.db = db;
     console.log('Connected to MongoDB successfully');
 
-    // ✅ Montar rutas API
-    apiRoutes(app);
-
     startExpressServer();
 
   } catch (err) {
     console.log('MongoDB connection failed, using memory storage for development:', err.message);
 
-    // Usar almacenamiento en memoria
+    // Mantener almacenamiento en memoria
     app.locals.db = createMemoryStorage();
-
-    // ✅ Montar rutas API también aquí
-    apiRoutes(app);
 
     startExpressServer();
   }
