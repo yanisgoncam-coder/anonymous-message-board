@@ -107,19 +107,25 @@ suite('Functional Tests', function() {
           delete_password: 'deletepass'
         })
         .end(function(err, res) {
-          const threadIdToDelete = res.body._id;
-          
-          // Ahora eliminar el hilo con la contraseña correcta
+          // Después de crear, obtener la lista de hilos para encontrar el ID
           chai.request(server)
-            .delete('/api/threads/test')
-            .send({
-              thread_id: threadIdToDelete,
-              delete_password: 'deletepass'
-            })
-            .end(function(err, res) {
-              assert.equal(res.status, 200);
-              assert.equal(res.text, 'success');
-              done();
+            .get('/api/threads/test')
+            .end(function(err, res2) {
+              const createdThread = res2.body.find(t => t.text === 'Thread to delete');
+              const threadIdToDelete = createdThread._id;
+              
+              // Ahora eliminar el hilo con la contraseña correcta
+              chai.request(server)
+                .delete('/api/threads/test')
+                .send({
+                  thread_id: threadIdToDelete,
+                  delete_password: 'deletepass'
+                })
+                .end(function(err, res) {
+                  assert.equal(res.status, 200);
+                  assert.equal(res.text, 'success');
+                  done();
+                });
             });
         });
     });
@@ -251,19 +257,26 @@ suite('Functional Tests', function() {
           delete_password: 'testpass'
         })
         .end(function(err, res) {
-          const replyIdToReport = res.body._id;
-          
-          // Ahora reportar la respuesta
+          // Después de crear, obtener el hilo para encontrar el ID de la respuesta
           chai.request(server)
-            .put('/api/replies/test')
-            .send({
-              thread_id: testThreadId,
-              reply_id: replyIdToReport
-            })
-            .end(function(err, res) {
-              assert.equal(res.status, 200);
-              assert.equal(res.text, 'reported');
-              done();
+            .get('/api/replies/test')
+            .query({ thread_id: testThreadId })
+            .end(function(err, res2) {
+              const createdReply = res2.body.replies.find(r => r.text === 'Reply to report');
+              const replyIdToReport = createdReply._id;
+              
+              // Ahora reportar la respuesta
+              chai.request(server)
+                .put('/api/replies/test')
+                .send({
+                  thread_id: testThreadId,
+                  reply_id: replyIdToReport
+                })
+                .end(function(err, res) {
+                  assert.equal(res.status, 200);
+                  assert.equal(res.text, 'reported');
+                  done();
+                });
             });
         });
     });
