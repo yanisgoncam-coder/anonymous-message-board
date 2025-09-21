@@ -32,7 +32,7 @@ class ReplyController {
       }
 
       return {
-        _id: newReply._id,
+        _id: newReply._id.toString(),
         text: newReply.text,
         created_on: newReply.created_on
       };
@@ -102,13 +102,13 @@ class ReplyController {
       if (result.matchedCount === 1) {
         return 'success';
       } else {
-        throw new Error('Failed to delete reply');
+        throw new Error('Reply not found');
       }
     } catch (error) {
-      if (error.message.includes('not found') || error.message.includes('incorrect password')) {
-        return error.message.includes('incorrect') ? 'incorrect password' : 'Reply not found';
+      if (error.message.includes('incorrect password')) {
+        return 'incorrect password';
       }
-      throw new Error('Error deleting reply: ' + error.message);
+      throw error; // Propagar el error para que routes lo maneje apropiadamente
     }
   }
 }

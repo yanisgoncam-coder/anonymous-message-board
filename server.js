@@ -69,43 +69,134 @@ const PORT = 5000;
 
 // Función para crear una colección en memoria si no hay MongoDB disponible
 function createMemoryStorage() {
+  const threads = []; // Almacén central cerrado para evitar problemas de contexto
+  
   const memoryDB = {
-    threads: [],
     collection: function(name) {
       return {
         insertOne: async (doc) => {
-          doc._id = new Date().getTime().toString();
-          this.threads.push(doc);
+          // Crear un ObjectId-like compatible
+          if (!doc._id) {
+            const timestamp = Math.floor(new Date().getTime() / 1000).toString(16);
+            const randomHex = Math.random().toString(16).substr(2, 16);
+            const objectIdString = (timestamp + randomHex).padEnd(24, '0').substr(0, 24);
+            doc._id = { toString: () => objectIdString };
+          }
+          threads.push({ ...doc });
           return { insertedId: doc._id };
         },
-        find: () => ({
-          sort: () => ({
-            limit: () => ({
-              toArray: async () => this.threads.slice(0, 10)
+        
+        find: (query = {}, options = {}) => ({
+          sort: (sortOptions) => ({
+            limit: (limitNum) => ({
+              toArray: async () => {
+                let filtered = threads.filter(t => {
+                  if (query.board && t.board !== query.board) return false;
+                  return true;
+                });
+                
+                // Aplicar sort
+                if (sortOptions && sortOptions.bumped_on === -1) {
+                  filtered.sort((a, b) => new Date(b.bumped_on) - new Date(a.bumped_on));
+                }
+                
+                // Aplicar limit
+                if (limitNum) {
+                  filtered = filtered.slice(0, limitNum);
+                }
+                
+                // Aplicar projection
+                if (options.projection) {
+                  filtered = filtered.map(item => {
+                    const projected = { ...item };
+                    Object.keys(options.projection).forEach(key => {
+                      if (options.projection[key] === 0) {
+                        delete projected[key];
+                      }
+                    });
+                    return projected;
+                  });
+                }
+                
+                return filtered;
+              }
             })
           })
         }),
-        findOne: async (query) => {
-          return this.threads.find(t => t._id === query._id || t._id.toString() === query._id.toString());
-        },
-        updateOne: async (query, update) => {
-          const thread = this.threads.find(t => t._id === query._id || t._id.toString() === query._id.toString());
-          if (thread) {
-            if (update.$set) Object.assign(thread, update.$set);
-            if (update.$push) {
-              Object.keys(update.$push).forEach(key => {
-                if (!thread[key]) thread[key] = [];
-                thread[key].push(update.$push[key]);
-              });
-            }
-            return { matchedCount: 1 };
+        
+        findOne: async (query, options = {}) => {
+          let thread = threads.find(t => {
+            if (query._id && t._id.toString() !== query._id.toString()) return false;
+            if (query.board && t.board !== query.board) return false;
+            return true;
+          });
+          
+          if (thread && options.projection) {
+            thread = { ...thread };
+            Object.keys(options.projection).forEach(key => {
+              if (options.projection[key] === 0) {
+                delete thread[key];
+              }
+            });
           }
-          return { matchedCount: 0 };
+          
+          return thread;
         },
+        
+        updateOne: async (query, update) => {
+          const threadIndex = threads.findIndex(t => {
+            if (query._id && t._id.toString() !== query._id.toString()) return false;
+            if (query.board && t.board !== query.board) return false;
+            if (query['replies._id']) {
+              const replyExists = t.replies && t.replies.some(r => r._id.toString() === query['replies._id'].toString());
+              if (!replyExists) return false;
+            }
+            return true;
+          });
+          
+          if (threadIndex === -1) return { matchedCount: 0 };
+          
+          const thread = threads[threadIndex];
+          
+          // Manejar $set
+          if (update.$set) {
+            if (update.$set['replies.$.reported']) {
+              // Actualización posicional para respuestas
+              const replyIndex = thread.replies.findIndex(r => r._id.toString() === query['replies._id'].toString());
+              if (replyIndex !== -1) {
+                thread.replies[replyIndex].reported = true;
+              }
+            } else if (update.$set['replies.$.text']) {
+              // Actualización posicional para texto de respuesta
+              const replyIndex = thread.replies.findIndex(r => r._id.toString() === query['replies._id'].toString());
+              if (replyIndex !== -1) {
+                thread.replies[replyIndex].text = update.$set['replies.$.text'];
+              }
+            } else {
+              Object.assign(thread, update.$set);
+            }
+          }
+          
+          // Manejar $push
+          if (update.$push) {
+            Object.keys(update.$push).forEach(key => {
+              if (!thread[key]) thread[key] = [];
+              thread[key].push(update.$push[key]);
+            });
+          }
+          
+          return { matchedCount: 1 };
+        },
+        
         deleteOne: async (query) => {
-          const index = this.threads.findIndex(t => t._id === query._id || t._id.toString() === query._id.toString());
+          const index = threads.findIndex(t => {
+            if (query._id && t._id.toString() !== query._id.toString()) return false;
+            if (query.board && t.board !== query.board) return false;
+            return true;
+          });
+          
           if (index > -1) {
-            this.threads.splice(index, 1);
+            threads.splice(index, 1);
             return { deletedCount: 1 };
           }
           return { deletedCount: 0 };

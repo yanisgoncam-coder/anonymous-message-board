@@ -19,21 +19,37 @@ suite('Functional Tests', function() {
           text: 'Test thread text',
           delete_password: 'password123'
         })
+        .redirects(0) // No seguir redirecciones automáticamente
         .end(function(err, res) {
-          assert.equal(res.status, 200);
-          assert.property(res.body, '_id');
-          assert.property(res.body, 'text');
-          assert.equal(res.body.text, 'Test thread text');
-          assert.property(res.body, 'created_on');
-          assert.property(res.body, 'bumped_on');
-          assert.property(res.body, 'replies');
-          assert.isArray(res.body.replies);
-          assert.notProperty(res.body, 'delete_password');
-          assert.notProperty(res.body, 'reported');
+          // Verificar redirección 303
+          assert.equal(res.status, 303);
+          assert.equal(res.headers.location, '/b/test/');
           
-          // Guardar el ID del hilo para pruebas posteriores
-          testThreadId = res.body._id;
-          done();
+          // Ahora obtener los hilos para verificar que se creó correctamente
+          chai.request(server)
+            .get('/api/threads/test')
+            .end(function(err, res2) {
+              assert.equal(res2.status, 200);
+              assert.isArray(res2.body);
+              assert.isAtLeast(res2.body.length, 1);
+              
+              // Encontrar nuestro hilo
+              const createdThread = res2.body.find(t => t.text === 'Test thread text');
+              assert.exists(createdThread);
+              assert.property(createdThread, '_id');
+              assert.property(createdThread, 'text');
+              assert.equal(createdThread.text, 'Test thread text');
+              assert.property(createdThread, 'created_on');
+              assert.property(createdThread, 'bumped_on');
+              assert.property(createdThread, 'replies');
+              assert.isArray(createdThread.replies);
+              assert.notProperty(createdThread, 'delete_password');
+              assert.notProperty(createdThread, 'reported');
+              
+              // Guardar el ID del hilo para pruebas posteriores
+              testThreadId = createdThread._id;
+              done();
+            });
         });
     });
     
@@ -133,18 +149,36 @@ suite('Functional Tests', function() {
           text: 'Test reply text',
           delete_password: 'replypass'
         })
+        .redirects(0) // No seguir redirecciones automáticamente
         .end(function(err, res) {
-          assert.equal(res.status, 200);
-          assert.property(res.body, '_id');
-          assert.property(res.body, 'text');
-          assert.equal(res.body.text, 'Test reply text');
-          assert.property(res.body, 'created_on');
-          assert.notProperty(res.body, 'delete_password');
-          assert.notProperty(res.body, 'reported');
+          // Verificar redirección 303
+          assert.equal(res.status, 303);
+          assert.equal(res.headers.location, `/b/test/${testThreadId}`);
           
-          // Guardar el ID de la respuesta para pruebas posteriores
-          testReplyId = res.body._id;
-          done();
+          // Ahora obtener el hilo para verificar que la respuesta se creó correctamente
+          chai.request(server)
+            .get('/api/replies/test')
+            .query({ thread_id: testThreadId })
+            .end(function(err, res2) {
+              assert.equal(res2.status, 200);
+              assert.property(res2.body, 'replies');
+              assert.isArray(res2.body.replies);
+              assert.isAtLeast(res2.body.replies.length, 1);
+              
+              // Encontrar nuestra respuesta
+              const createdReply = res2.body.replies.find(r => r.text === 'Test reply text');
+              assert.exists(createdReply);
+              assert.property(createdReply, '_id');
+              assert.property(createdReply, 'text');
+              assert.equal(createdReply.text, 'Test reply text');
+              assert.property(createdReply, 'created_on');
+              assert.notProperty(createdReply, 'delete_password');
+              assert.notProperty(createdReply, 'reported');
+              
+              // Guardar el ID de la respuesta para pruebas posteriores
+              testReplyId = createdReply._id;
+              done();
+            });
         });
     });
     

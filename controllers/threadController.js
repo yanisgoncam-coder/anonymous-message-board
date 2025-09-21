@@ -24,7 +24,7 @@ class ThreadController {
 
       const result = await this.collection.insertOne(newThread);
       return { 
-        _id: result.insertedId,
+        _id: result.insertedId.toString(),
         text: newThread.text,
         created_on: newThread.created_on,
         bumped_on: newThread.bumped_on,
@@ -52,7 +52,7 @@ class ThreadController {
 
       // Limitar replies a las 3 más recientes y ocultar campos sensibles
       const sanitizedThreads = threads.map(thread => ({
-        _id: thread._id,
+        _id: thread._id.toString(),
         text: thread.text,
         created_on: thread.created_on,
         bumped_on: thread.bumped_on,
@@ -60,7 +60,7 @@ class ThreadController {
           .sort((a, b) => b.created_on - a.created_on)
           .slice(0, 3)
           .map(reply => ({
-            _id: reply._id,
+            _id: reply._id.toString(),
             text: reply.text,
             created_on: reply.created_on
           }))
@@ -114,13 +114,13 @@ class ThreadController {
       if (result.deletedCount === 1) {
         return 'success';
       } else {
-        throw new Error('Failed to delete thread');
+        throw new Error('Thread not found');
       }
     } catch (error) {
-      if (error.message === 'Thread not found' || error.message.includes('incorrect password')) {
-        return error.message.includes('incorrect') ? 'incorrect password' : 'Thread not found';
+      if (error.message.includes('incorrect password')) {
+        return 'incorrect password';
       }
-      throw new Error('Error deleting thread: ' + error.message);
+      throw error; // Propagar el error para que routes lo maneje apropiadamente
     }
   }
 
@@ -144,13 +144,13 @@ class ThreadController {
 
       // Ocultar campos sensibles de las respuestas
       const sanitizedReplies = thread.replies.map(reply => ({
-        _id: reply._id,
+        _id: reply._id.toString(),
         text: reply.text,
         created_on: reply.created_on
       }));
 
       return {
-        _id: thread._id,
+        _id: thread._id.toString(),
         text: thread.text,
         created_on: thread.created_on,
         bumped_on: thread.bumped_on,
