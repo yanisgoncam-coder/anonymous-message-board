@@ -203,7 +203,11 @@ function createMemoryStorage() {
 async function startServer() {
   try {
     console.log('Attempting to connect to MongoDB...');
-    const client = await MongoClient.connect(MONGO_URI);
+    const client = await MongoClient.connect(MONGO_URI, {
+      connectTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 5000
+    });
     const db = client.db();
     app.locals.db = db;
     console.log('Connected to MongoDB successfully');

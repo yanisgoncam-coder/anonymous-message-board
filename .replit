@@ -16,20 +16,16 @@ args = "Server"
 name = "Server"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm start"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
 
-[[ports]]
-localPort = 3000
-externalPort = 80
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm start"
+waitForPort = 3000
 
 [[ports]]
-localPort = 5000
+localPort = 3000
 externalPort = 3000
 
 [[ports]]
@@ -58,6 +54,10 @@ externalPort = 5000
 [[ports]]
 localPort = 39487
 externalPort = 8099
+
+[[ports]]
+localPort = 39801
+externalPort = 80
 
 [[ports]]
 localPort = 40495

@@ -1,0 +1,40 @@
+1.Configure NODE_ENV para probar sin comillas cuando esté listo para escribir pruebas y bases de datos en la cadena de conexión de sus bases de datos (en .env)
+2.Se recomienda crear controladores/controladores y manejar el enrutamiento enroutes/api.js
+3.Agregará cualquier característica de seguridad aserver.js
+
+Escribe las siguientes pruebas en tests/2_functional-tests.js:
+
+-Creando un nuevo hilo: solicitud POST a/api/threads/{board}
+-Visualizando los 10 hilos más recientes con 3 respuestas cada uno: Solicitud GET a/api/threads/{board}
+-Eliminar un hilo con una contraseña incorrecta: solicitud DELETE /api/threads/{board}con una contraseña no válidadelete_password
+-Eliminar un hilo con la contraseña correcta: solicitud DELETE /api/threads/{board}con una contraseña válidadelete_password
+-Reportar un hilo: solicitud PUT a/api/threads/{board}
+-Crear una nueva respuesta: solicitud POST a/api/replies/{board}
+-Visualización de un solo hilo con todas las respuestas: solicitud GET a/api/replies/{board}
+-Eliminar una respuesta con una contraseña incorrecta: solicitud DELETE /api/replies/{board}con una contraseña no válidadelete_password
+-Eliminar una respuesta con la contraseña correcta: solicitud DELETE /api/replies/{board}con una contraseña válidadelete_password
+-Informar una respuesta: solicitud PUT a/api/replies/{board}
+
+
+
+// running tests
+13. All 10 functional tests are complete and passing.
+// tests completed
+
+Pruebas
+Aprobado :1. Puedes proporcionar tu propio proyecto, no la URL de ejemplo.
+Fallido :2. Sólo permita que su sitio se cargue en un iFrame en sus propias páginas.
+Fallido :3. No permitir la precarga de DNS.
+Fallido :4. Permita que su sitio envíe el referente únicamente a sus propias páginas.
+Fallido :5. Puede enviar una solicitud POST a /api/threads/{board}con datos de formulario, incluyendo texty delete_password. El registro de base de datos guardado tendrá al menos los campos _id, text, created_on(fecha y hora), bumped_on(fecha y hora, comienza igual que created_on), reported(booleano) delete_password, y replies(matriz).
+Fallido :6. Puedes enviar una solicitud POST /api/replies/{board}con datos de formulario como text, delete_password, & thread_id. Esto actualizará la bumped_onfecha a la del comentario. En la repliesmatriz del hilo, se guardará un objeto con al menos las propiedades _id, text, created_on, delete_password, & reported.
+Fallido :7. Puede enviar una solicitud GET a /api/threads/{board}. Se devolverá una matriz con los 10 hilos actualizados más recientes en el foro, con solo las 3 respuestas más recientes de cada uno. Los campos reportedy delete_passwordno se enviarán al cliente.
+Fallido :8. Puedes enviar una solicitud GET a /api/replies/{board}?thread_id={thread_id}. Se devolverá el hilo completo con todas sus respuestas, excluyendo también los mismos campos del cliente que en la prueba anterior.
+Fallido :9. Puedes enviar una solicitud DELETE a /api/threads/{board}y pasar el thread_id& delete_passwordpara eliminar el hilo. Se devolverá la cadena incorrect passwordo success.
+Fallido :10. Puede enviar una solicitud DELETE a /api/replies/{board}y pasar thread_id, reply_id, & delete_password. Se devolverá la cadena incorrect passwordo success. Si la solicitud es correcta, el texto de reply_idse cambiará a [deleted].
+Fallido :11. Puede enviar una solicitud PUT a /api/threads/{board}y pasar el thread_id. Se devolverá la cadena reported. El reportedvalor de thread_idse cambiará a true.
+Fallido :12. Puede enviar una solicitud PUT a /api/replies/{board}y pasar el thread_id& reply_id. Se devolverá la cadena reported. El reportedvalor de reply_idse cambiará a true.
+Fallido :13. Las 10 pruebas funcionales están completas y aprobadas.
+
+
+pero me apareceque solamente el punto 13 faltaayudame y solucioname esto
