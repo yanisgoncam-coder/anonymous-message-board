@@ -1,32 +1,38 @@
 'use strict';
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const helmet = require('helmet');
+const mongoose = require('mongoose');
 const apiRoutes = require('./routes/api');
 
 const app = express();
 
-// Middlewares
+// =================== Middlewares ===================
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Seguridad para FCC tests
-app.use(helmet.frameguard({ action: 'sameorigin' }));
-app.use(helmet.dnsPrefetchControl({ allow: false }));
-app.use(helmet.referrerPolicy({ policy: 'same-origin' }));
+// ✅ Configuraciones de seguridad requeridas por los tests FCC
+app.use((req, res, next) => {
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');          // Test 2
+  res.setHeader('X-DNS-Prefetch-Control', 'off');           // Test 3
+  res.setHeader('Referrer-Policy', 'same-origin');          // Test 4
+  next();
+});
 
-// Rutas API
+// También aplicamos Helmet (sin CSP para evitar conflictos)
+app.use(helmet({ contentSecurityPolicy: false }));
+
+// =================== Rutas ===================
 app.use('/api', apiRoutes);
 
 // Página raíz
 app.get('/', (req, res) => {
-  res.send('Anonymous Message Board API');
+  res.send('Anonymous Message Board API is running');
 });
 
-// Conexión a DB
-const DB = process.env.DB || 'mongodb://127.0.0.1:27017/messageboard';
+// =================== Conexión a MongoDB ===================
 const PORT = process.env.PORT || 3000;
+  const DB = process.env.DB || 'mongodb://127.0.0.1:27017/messageboard';
 
 mongoose.set('strictQuery', false);
 
@@ -39,4 +45,4 @@ mongoose.connect(DB)
   })
   .catch(err => console.error('❌ DB connection error:', err));
 
-module.exports = app; // export para tests
+module.exports = app;
