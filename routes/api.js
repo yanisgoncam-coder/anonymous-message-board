@@ -27,26 +27,31 @@ const Thread = mongoose.model('Thread', threadSchema);
 
 // Crear thread
 router.post('/threads/:board', async (req, res) => {
-  const board = req.params.board;
-  const { text, delete_password } = req.body;
+  try {
+    const board = req.params.board;
+    const { text, delete_password } = req.body;
+    if (!text || !delete_password) return res.status(400).send('missing fields');
 
-  if (!text || !delete_password) return res.status(400).send('missing fields');
+    const thread = new Thread({
+      board,
+      text,
+      delete_password,
+      created_on: new Date(),
+      bumped_on: new Date(),
+      reported: false,
+      replies: [],
+    });
 
-  const thread = new Thread({
-    board,
-    text,
-    delete_password,
-    created_on: new Date(),
-    bumped_on: new Date(),
-    reported: false,
-    replies: [],
-  });
-
-  await thread.save();
-  res.redirect(`/b/${board}/`);
+    await thread.save();
+    // FCC espera redirección a la vista del board
+    res.redirect(`/b/${board}/`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('server error');
+  }
 });
 
-// Obtener threads
+// Obtener los 10 threads más recientes con 3 replies cada uno
 router.get('/threads/:board', async (req, res) => {
   const board = req.params.board;
   const threads = await Thread.find({ board })
@@ -55,7 +60,8 @@ router.get('/threads/:board', async (req, res) => {
     .lean();
 
   const cleaned = threads.map((t) => {
-    t.replies = t.replies
+    // ordenar replies por fecha descendente
+    t.replies = (t.replies || [])
       .sort((a, b) => b.created_on - a.created_on)
       .slice(0, 3)
       .map((r) => ({
@@ -63,6 +69,8 @@ router.get('/threads/:board', async (req, res) => {
         text: r.text,
         created_on: r.created_on,
       }));
+
+    // remover campos no permitidos
     return {
       _id: t._id,
       text: t.text,
@@ -99,12 +107,15 @@ router.put('/threads/:board', async (req, res) => {
 
 // ==================== REPLIES ====================
 
-// Crear respuesta
+// Crear nueva reply
 router.post('/replies/:board', async (req, res) => {
   const board = req.params.board;
   const { thread_id, text, delete_password } = req.body;
+  if (!text || !delete_password || !thread_id)
+    return res.status(400).send('missing fields');
+
   const thread = await Thread.findById(thread_id);
-  if (!thread) return res.status(404).send('Thread not found');
+  if (!thread) return res.status(404).send('thread not found');
 
   const reply = {
     text,
@@ -120,11 +131,11 @@ router.post('/replies/:board', async (req, res) => {
   res.redirect(`/b/${board}/${thread_id}`);
 });
 
-// Obtener respuestas de un hilo
+// Obtener todas las replies de un thread
 router.get('/replies/:board', async (req, res) => {
   const thread_id = req.query.thread_id;
   const thread = await Thread.findById(thread_id).lean();
-  if (!thread) return res.status(404).send('Thread not found');
+  if (!thread) return res.status(404).send('thread not found');
 
   const cleaned = {
     _id: thread._id,
@@ -141,7 +152,7 @@ router.get('/replies/:board', async (req, res) => {
   res.json(cleaned);
 });
 
-// Borrar respuesta
+// Borrar reply
 router.delete('/replies/:board', async (req, res) => {
   const { thread_id, reply_id, delete_password } = req.body;
   const thread = await Thread.findById(thread_id);
@@ -157,7 +168,7 @@ router.delete('/replies/:board', async (req, res) => {
   res.send('success');
 });
 
-// Reportar respuesta
+// Reportar reply
 router.put('/replies/:board', async (req, res) => {
   const { thread_id, reply_id } = req.body;
   const thread = await Thread.findById(thread_id);

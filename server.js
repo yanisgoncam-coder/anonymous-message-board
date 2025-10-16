@@ -36,13 +36,16 @@ const PORT = process.env.PORT || 3000;
 const DB = process.env.DB || 'mongodb://127.0.0.1:27017/messageboard';
 
 mongoose.set('strictQuery', false);
+
+// Conexión a MongoDB
 mongoose
   .connect(DB)
-  .then(() => {
-    if (process.env.NODE_ENV !== 'test') {
-      app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
-    }
-  })
-  .catch((err) => console.error('❌ DB connection error:', err));
+  .then(() => console.log("✅ Conectado a MongoDB"))
+  .catch((err) => console.error("❌ Error al conectar con MongoDB:", err));
+
+// Escuchar el puerto (se ejecutará aunque falle la DB)
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
+});
 
 module.exports = app;
