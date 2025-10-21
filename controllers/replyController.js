@@ -59,7 +59,7 @@ class ReplyController {
         throw new Error('Reply not found');
       }
 
-      return 'reported';
+      return 'success';
     } catch (error) {
       throw new Error('Error reporting reply: ' + error.message);
     }
