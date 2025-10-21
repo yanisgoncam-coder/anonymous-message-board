@@ -201,7 +201,9 @@ function createMemoryStorage() {
 // ===============================
 async function startServer() {
   try {
-    console.log('Attempting to connect to MongoDB...');
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('Attempting to connect to MongoDB...');
+    }
     const client = await MongoClient.connect(MONGO_URI, {
       connectTimeoutMS: 5000,
       serverSelectionTimeoutMS: 5000,
@@ -209,7 +211,9 @@ async function startServer() {
     });
     const db = client.db();
     app.locals.db = db;
-    console.log('✅ Connected to MongoDB successfully');
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('✅ Connected to MongoDB successfully');
+    }
     startExpressServer();
   } catch (err) {
     if (process.env.NODE_ENV !== 'test') {
@@ -230,15 +234,15 @@ function startExpressServer() {
   });
 
   const listener = app.listen(PORT, '0.0.0.0', () => {
-    console.log('✅ Your app is listening on port ' + listener.address().port);
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('✅ Your app is listening on port ' + listener.address().port);
+    }
 
     if (process.env.NODE_ENV === 'test') {
-      console.log('Running Tests...');
       setTimeout(() => {
         try {
           runner.run();
         } catch (e) {
-          console.log('Tests are not valid:');
           console.error(e);
         }
       }, 1500);
